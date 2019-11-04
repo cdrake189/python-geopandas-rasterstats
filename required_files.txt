@@ -1,2 +1,2 @@
-spatial_join.py
-spatial_join.png
+sample_raster.py
+sample_raster.png
