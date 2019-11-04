@@ -16,6 +16,7 @@ The objective of this lab is to reproduce one of the QGIS Tutorials you did prev
 ## Deliverables
 - `sample_raster.py`
 - `sample_raster.png`
+- `zonal_stats_county_temps.png`
 
 ## Special instructions for `Spyder`:
 Change the backend to automatic:
@@ -53,28 +54,28 @@ tmax_path='/Users/aaryno/classes/gist604b/fall-2019-online/data/us.tmax_nohads_l
 ```
 Now, load the tif using `rasterio`:
 ```
-dataset = rasterio.open(tmax_path)
+tmax = rasterio.open(tmax_path)
 ```
 Do some data exploration:
 ```
-dataset.width
-dataset.height
-dataset.count
-dataset.bounds
-dataset.transform
-dataset.transform * (dataset.width, dataset.height)
-dataset.crs
-dataset.indexes
-band1 = dataset.read(1)
+tmax.width
+tmax.height
+tmax.count
+tmax.bounds
+tmax.transform
+tmax.transform * (tmax.width, tmax.height)
+tmax.crs
+tmax.indexes
+band1 = tmax.read(1)
 band1
 ```
 Plot the raster:
 ```
 from rasterio.plot import show
-show(dataset)
+show(tmax)
 ```
 
-### read csv
+### Read csv
 Import libraries:
 ```
 import pandas 
@@ -85,6 +86,7 @@ from descartes import PolygonPatch
 ```
 Read CSV using pandas and specifying a tab (`\t`) delimiter:
 ```
+
 gaz = pandas.read_csv('/Users/aaryno/classes/gist604b/fall-2019-online/data/2018_Gaz_ua_national.txt',delimiter='\t')
 ```
 It does a poor job with the column names (one of them has a newline in it), so let's fix it:
@@ -123,75 +125,159 @@ gaz_geo.plot()
 ```
 
 ### Plot them together:
+When we create a plot we can get access to the plot object, including its axes, and manipulate them. Additionally, we can 
+use the same plot and add data to it. Note that for this to work in spyder you will need to set your `iPython` ->  `Graphics` -> `Backend` to `Automatic`
 ```
-rasterio.plot.show((dataset, 1))
+rasterio.plot.show((tmax, 1))
 ax = mpl.pyplot.gca()
 
-patches = [PolygonPatch(feature) for feature in gaz_df]
-ax.add_collection(mpl.collections.PatchCollection(patches))
-
-mpl.figure(1)
-import matplotlib.pyplot as plt
-from matplotlib import interactive
-interactive(True)
-plt.figure(1)
-gaz_geo.plot()
-```
-
-from matplotlib import pyplot
-fig, ax = pyplot.subplots(1, figsize=(12, 12))
-show(dataset, ax=ax)
 gaz_geo.plot(ax=ax)
-pyplot.show()
+```
+Note the extents change when the `gaz_geo` dataset is added to the plot. Let's zoom back in by changing the axis limits. Fix the axes to keep the extent snapped to the boundaries of the `tmax` raster
+```
+ax.set_xlim([tmax.bounds.left, tmax.bounds.right])
+ax.set_ylim([tmax.bounds.bottom, tmax.bounds.top])
+```
+### Clip the points to the extent of the raster
+Before we sample the points we will need to clip the points to the extent of the raster. Otherwise you will encounter errors
+in the sampling. To clip points to the raster we need first create a polygon boundary of the raster and use a spatial
+join to intersect the points with the polygon. Unfortunately, creating a polygon from the extent of the raster does not
+seem to be very straight forward. We will first get the extents of the raster, then manually construct a geometry. In order
+to use the `geopandas` `sjoin` we will then need to create a geopandas SpatialDataFrame. This section details those steps.
 
-dataset.bounds.left
-
-b = dataset.bound
-dataset_env = geopandas.GeoSeries(shapely.geometry.Polygon([(dataset.bounds.left, dataset.bounds.bottom), (dataset.bounds.right, dataset.bounds.bottom), (dataset.bounds.right, dataset.bounds.top), (dataset.bounds.left, dataset.bounds.top),(dataset.bounds.left, dataset.bounds.bottom) ]))
-
-df1 = geopandas.GeoDataFrame({'geometry': dataset_env, 'a':[1]})
-dataset_env.plot()
-
-gaz_48 = geopandas.sjoin(gaz_geo, df1)
-
+The `rasterio` raster has a `bound` attribute which gives the boundaries:
+```
+tmax.bound
+```
+To create a `shapely.geometry`:
+```
+shapely.geometry.Polygon([(left, bottom), (right, bottom), (right, top), (left, top), (left, bottom)])
+```
+which, subbing in the attributes from the `tmax.bound`:
+```
+poly = shapely.geometry.Polygon([(tmax.bounds.left, tmax.bounds.bottom), (tmax.bounds.right, tmax.bounds.bottom), (tmax.bounds.right, tmax.bounds.top), (tmax.bounds.left, tmax.bounds.top),(tmax.bounds.left, tmax.bounds.bottom)])
+poly
+```
+Geopandas wants the `Polygon` in a `GeoSeries`:
+```
+tmax_env = geopandas.GeoSeries(poly)
+```
+Finally, to create the `GeoDataFrame` we need a `geometry` and a `DataFrame`
+```
+tmax_env = geopandas.GeoDataFrame({'geometry': tmax_env, 'a':[1]})
+tmax_env
+tmax_env.head()
+tmax_env.plot()
+```
+Now we can intersect the points with the polygons. This is doing using the geopandas `sjoin` method. See 
+[geopandas doc](http://geopandas.org/mergingdata.html#spatial-joins) for more information.
+```
+gaz_48 = geopandas.sjoin(gaz_geo, df)
+gaz_48
+gaz_48.shape
 gaz_48.plot()
+```
+If you did it right, then there should only be points within the outline of the `tmax` raster (i.e., in the continental US).
 
-
-
-# Sample
+### Sample the points
+To sample using the `rasterio` library we will need to create a sequence of `x,y` pairs. See [rasterio docs](https://rasterio.readthedocs.io/en/latest/api/rasterio._io.html#rasterio._io.DatasetReaderBase.sample).
+```
 xy = [xy for xy in zip(gaz_48['INTPTLONG'], gaz_48.INTPTLAT)]
-
-samples = [z for z in dataset.sample(xy=xy)]
-
-
+```
+Next, sample the raster with the `x,y` pairs:
+```
+tmax.sample(xy=xy)
+```
+You'll see it's a `generator object`. To convert it to a list (which we want so we can add a new column to our points 
+GeoDataFrame, `gaz_48`), just call the `list()` function on it:
+```
+samples = list(tmax.sample(xy=xy)])
+```
+`samples` should be the same length as the number of records in `gaz_48` and in the same order. 
+```
+len(samples)
+gaz_48.shape
+```
+Thus, we can simply append the `samples` list to the `gas_48` DataFrame:
+```
 gaz_48['tmax'] = samples
+```
+## Zonal stats
+In the QGIS Tutorial, the tutorial switches gears and performs zonal stats on of the `mean` max temperature within each
+county. This is a relatively straightforward task with `rasterstats` library, which has a `zonal_stats` function. The `zonal_stats` takes filenames as arguments. Continue to add commands to your `sample_raster.py` file.
 
-
+First, import the counties shapefile:
+````
 import rasterstats
 counties_shapefile='/Users/aaryno/classes/gist604b/fall-2019-online/data/tl_2018_us_county/tl_2018_us_county.shp'
 counties = geopandas.read_file(counties_shapefile)
 counties.plot()
+```
+That's hard to see since we are interested in the continental US
+```
 
-county_stats = rasterstats.zonal_stats(counties_shapefile, tmax_path, stats="count mean", all_touched=True)
-
+ax.set_xlim([tmax.bounds.left, tmax.bounds.right])
+ax.set_ylim([tmax.bounds.bottom, tmax.bounds.top])
+```
+Next, perform the zonal stats. We need to set `all_touched` = `True` (see [rasterstats docs](https://pythonhosted.org/rasterstats/manual.html#rasterization-strategy) for discussion.
+```
+county_stats = rasterstats.zonal_stats(counties_shapefile, tmax_path, stats="mean", all_touched=True)
+```
+Dig in and see what it gives us:
+```
 type(county_stats)
+county_stats[0]
+type(county_stats[0])
+```
+This gives us a `list` of `dict`s with the `mean` for each county. This is exactly what we want. But we also
+want it joined to the counties GeoDataFrame but it needs to be converted into a list of numbers. 
 
-
+```
 tmax_mean = [x['mean'] for x in county_stats]
-tmax_count = [x['count'] for x in county_stats]
-
+type(tmax_mean)
+tmax_mean[0]
+len(tmax_mean)
+```
+This looks like what we want; just like with the samples, we will create a new column on `counties` to store the 
+mean `tmax`:
+```
 counties['tmax_mean'] = tmax_mean
-
-
+```
+Next, save the file:
+```
 counties.to_file('/Users/aaryno/classes/gist604b/fall-2019-online/data/tl_2018_us_county/tl_2018_us_county_temps.shp')
+```
 
+### Plot the counties based on the mean max temp
+Plot the counties using the `tmax_mean` column:
+```
+counties.plot(column='tmax_mean')
+```
+That's not easy to see so let's change the axes:
+```
+ax.set_xlim([dataset.bounds.left, dataset.bounds.right])
+ax.set_ylim([dataset.bounds.bottom, dataset.bounds.top])
+counties.plot(column='tmax_mean', ax=ax)
+```
+Let's stretch the color map:
+```
 counties.plot(column='tmax_mean',cmap='OrRd', scheme='quantiles')
-
+```
+To finish, let's make a plot containing both the `gaz_48` points and the counties symbolized by mean max temperature.
+```
 from matplotlib import pyplot
 fig, ax = pyplot.subplots(1, figsize=(12, 12))
 
 ax.set_xlim([dataset.bounds.left, dataset.bounds.right])
 ax.set_ylim([dataset.bounds.bottom, dataset.bounds.top])
 counties.plot(column='tmax_mean', ax=ax)
-gaz_geo.plot(ax=ax,marker='+')
+gaz_48.plot(ax=ax,marker='+',color='red')
 pyplot.show()
+```
+## Deliverable
+Look at the [geopandas docs](http://geopandas.org/reference.html#geopandas.GeoDataFrame.plot) to finish up. Recreate the last map containing the counties symbolized based on `tmax_mean` and the `gaz_48` urban areas but change:
+1) the color scheme of the counties
+2) the color of the gaz urban areas
+3) the symbol of the gaz urban areas
+
+Create a screenshot of your final map and name it `zonal_stats_county_temps.png `
