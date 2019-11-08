@@ -160,19 +160,19 @@ poly
 ```
 Geopandas wants the `Polygon` in a `GeoSeries`:
 ```
-tmax_env = geopandas.GeoSeries(poly)
+tmax_env_series = geopandas.GeoSeries(poly)
 ```
 Finally, to create the `GeoDataFrame` we need a `geometry` and a `DataFrame`
 ```
-tmax_env = geopandas.GeoDataFrame({'geometry': tmax_env, 'a':[1]})
-tmax_env
-tmax_env.head()
-tmax_env.plot()
+tmax_env_gdf = geopandas.GeoDataFrame({'geometry': tmax_env_series, 'a':[1]})
+tmax_env_gdf
+tmax_env_gdf.head()
+tmax_env_gdf.plot()
 ```
 Now we can intersect the points with the polygons. This is doing using the geopandas `sjoin` method. See 
 [geopandas doc](http://geopandas.org/mergingdata.html#spatial-joins) for more information.
 ```
-gaz_48 = geopandas.sjoin(gaz_geo, df)
+gaz_48 = geopandas.sjoin(gaz_geo, tmax_env_gdf)
 gaz_48
 gaz_48.shape
 gaz_48.plot()
