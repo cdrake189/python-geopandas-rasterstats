@@ -207,7 +207,7 @@ In the QGIS Tutorial, the tutorial switches gears and performs zonal stats on of
 county. This is a relatively straightforward task with `rasterstats` library, which has a `zonal_stats` function. The `zonal_stats` takes filenames as arguments. Continue to add commands to your `sample_raster.py` file.
 
 First, import the counties shapefile:
-````
+```
 import rasterstats
 counties_shapefile='/Users/aaryno/classes/gist604b/fall-2019-online/data/tl_2018_us_county/tl_2018_us_county.shp'
 counties = geopandas.read_file(counties_shapefile)
@@ -281,3 +281,5 @@ Look at the [geopandas docs](http://geopandas.org/reference.html#geopandas.GeoDa
 3) the symbol of the gaz urban areas
 
 Create a screenshot of your final map and name it `zonal_stats_county_temps.png `
+
+[![DOI](https://zenodo.org/badge/219385180.svg)](https://zenodo.org/badge/latestdoi/219385180)
