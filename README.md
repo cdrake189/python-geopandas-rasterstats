@@ -18,16 +18,6 @@ The objective of this lab is to reproduce one of the QGIS Tutorials you did prev
 - `sample_raster.png`
 - `zonal_stats_county_temps.png`
 
-## Special instructions for `Spyder`:
-Change the backend to automatic:
-
-```
-Tools > preferences > IPython console > Graphics > Graphics backend > Backend: Automatic
-```
-(from [StackOverflow](https://stackoverflow.com/questions/23585126/how-do-i-get-interactive-plots-again-in-spyder-ipython-matplotlib))
-
-Then close and open Spyder.
-
 ## Sampling raster data
 Review [Sampling raster data](http://www.qgistutorials.com/en/docs/3/sampling_raster_data.html) to see our objective.
 
@@ -37,7 +27,17 @@ Review [Sampling raster data](http://www.qgistutorials.com/en/docs/3/sampling_ra
 - [2018_Gaz_ua_national.zip](http://www.qgistutorials.com/downloads/2018_Gaz_ua_national.zip)
 - [tl_2018_us_county.zip](http://www.qgistutorials.com/downloads/tl_2018_us_county.zip)
 
-Open `Spyder` and create a new document in this repo named `sample_raster.py`.
+### Open `Spyder` (instructions are slightly different for this assignment):
+We will map our data directory separately from our repo so we don't accidentally check our data into github. In the 
+example below, my data is at `~/Documents/gist604b-s2021/data` but yours might be at a path like
+`d:/gist604b/data`. Set the appropriate path for the volume you will want to share for data and then, from this repo
+directory:
+```
+python spyder_desktop.py -v ~/Documents/gist604b-s2021/data -w shared
+```
+Note that the data directory will be mounted in the container as `~/data` and the repo directory will be mounted as `~/shared`.
+
+Once spyder is open, create a new document in this repo (in the `~shared` directory) named `sample_raster.py`.
 
 ### Import libraries
 We are going to again use `geopandas` and  `descartes` in this lab, but also `rasterio`, `rasterstats`, `matplotlib`, and others. To start with:
@@ -50,7 +50,7 @@ We are going to reuse this string that gives the path to the tmax file you downl
 When you use a string more than once, it is better to create a variable to store the value because it is very easy
 for the value to become out of sync if, say, you want to change it and only change one of the instances.
 ```
-tmax_path='/Users/aaryno/classes/gist604b/fall-2019-online/data/us.tmax_nohads_ll_20190501_float.tif'
+tmax_path='/home/ubuntu/data/us.tmax_nohads_ll_20190501_float.tif'
 ```
 Now, load the tif using `rasterio`:
 ```
@@ -86,8 +86,7 @@ from descartes import PolygonPatch
 ```
 Read CSV using pandas and specifying a tab (`\t`) delimiter:
 ```
-
-gaz = pandas.read_csv('/Users/aaryno/classes/gist604b/fall-2019-online/data/2018_Gaz_ua_national.txt',delimiter='\t')
+gaz = pandas.read_csv('/home/ubuntu/data/2018_Gaz_ua_national.txt',delimiter='\t')
 ```
 It does a poor job with the column names (one of them has a newline in it), so let's fix it:
 ```
@@ -209,7 +208,7 @@ county. This is a relatively straightforward task with `rasterstats` library, wh
 First, import the counties shapefile:
 ```
 import rasterstats
-counties_shapefile='/Users/aaryno/classes/gist604b/fall-2019-online/data/tl_2018_us_county/tl_2018_us_county.shp'
+counties_shapefile='/home/ubuntu/data/tl_2018_us_county/tl_2018_us_county.shp'
 counties = geopandas.read_file(counties_shapefile)
 counties.plot()
 ```
@@ -245,7 +244,7 @@ counties['tmax_mean'] = tmax_mean
 ```
 Next, save the file:
 ```
-counties.to_file('/Users/aaryno/classes/gist604b/fall-2019-online/data/tl_2018_us_county/tl_2018_us_county_temps.shp')
+counties.to_file('/home/ubuntu/data/tl_2018_us_county/tl_2018_us_county_temps.shp')
 ```
 
 ### Plot the counties based on the mean max temp
