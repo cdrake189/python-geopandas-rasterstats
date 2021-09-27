@@ -27,19 +27,8 @@ Review [Sampling raster data](http://www.qgistutorials.com/en/docs/3/sampling_ra
 - [2018_Gaz_ua_national.zip](http://www.qgistutorials.com/downloads/2018_Gaz_ua_national.zip)
 - [tl_2018_us_county.zip](http://www.qgistutorials.com/downloads/tl_2018_us_county.zip)
 
-### Open `Spyder` (instructions are slightly different for this assignment):
-We will map our data directory separately from our repo so we don't accidentally check our data into github. In the 
-example below, my data is at `~/Documents/gist604b-s2021/data` but yours might be at a path like
-`d:/gist604b/data`. Set the appropriate path for the volume you will want to share for data and then, from this repo
-directory:
-```
-python spyder_desktop.py -v ~/Documents/gist604b-s2021/data -w shared
-```
-Note that the data directory will be mounted in the container as `~/data` and the repo directory will be mounted as `~/shared`.
+### Open `Spyder` and import libraries
 
-Once spyder is open, create a new document in this repo (in the `~shared` directory) named `sample_raster.py`.
-
-### Import libraries
 We are going to again use `geopandas` and  `descartes` in this lab, but also `rasterio`, `rasterstats`, `matplotlib`, and others. To start with:
 ```
 import rasterio
