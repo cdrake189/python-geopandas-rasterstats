@@ -266,8 +266,8 @@ counties.plot(column='tmax_mean')
 ```
 That's not easy to see so let's change the axes:
 ```
-ax.set_xlim([dataset.bounds.left, dataset.bounds.right])
-ax.set_ylim([dataset.bounds.bottom, dataset.bounds.top])
+ax.set_xlim([tmax.bounds.left, tmax.bounds.right])
+ax.set_ylim([tmax.bounds.bottom, tmax.bounds.top])
 counties.plot(column='tmax_mean', ax=ax)
 ```
 Let's stretch the color map:
@@ -279,8 +279,8 @@ To finish, let's make a plot containing both the `gaz_48` points and the countie
 from matplotlib import pyplot
 fig, ax = pyplot.subplots(1, figsize=(12, 12))
 
-ax.set_xlim([dataset.bounds.left, dataset.bounds.right])
-ax.set_ylim([dataset.bounds.bottom, dataset.bounds.top])
+ax.set_xlim([tmax.bounds.left, tmax.bounds.right])
+ax.set_ylim([tmax.bounds.bottom, tmax.bounds.top])
 counties.plot(column='tmax_mean', ax=ax)
 gaz_48.plot(ax=ax,marker='+',color='red')
 pyplot.show()
