@@ -18,19 +18,24 @@ The objective of this lab is to reproduce one of the QGIS Tutorials you did prev
 - `sample_raster.png`
 - `zonal_stats_county_temps.png`
 
+## Install any new libraries
+You will need to install at least `rasterstats` for this assignment. Add it to your `geo37` environment.
+
 ## Sampling raster data
 Review [Sampling raster data](http://www.qgistutorials.com/en/docs/3/sampling_raster_data.html) to see our objective.
 
-### Download and extract the data:
+### Download and extract the data to a single directory:
+Note that the paths in this assignment assume that the tl_2018_us_county shapefile is in the same directory as the other data and is _not_ in a subdirectory.
 
-- [us.tmax_nohads_ll_20190501_float.tif](http://www.qgistutorials.com/downloads/us.tmax_nohads_ll_20190501_float.tif)
-- [2018_Gaz_ua_national.zip](http://www.qgistutorials.com/downloads/2018_Gaz_ua_national.zip)
-- [tl_2018_us_county.zip](http://www.qgistutorials.com/downloads/tl_2018_us_county.zip)
+- [us.tmax_nohads_ll_20190501_float.tif](https://www.qgistutorials.com/downloads/us.tmax_nohads_ll_20190501_float.tif)
+- [2018_Gaz_ua_national.zip](https://www.qgistutorials.com/downloads/2018_Gaz_ua_national.zip)
+- [tl_2018_us_county.zip](https://www.qgistutorials.com/downloads/tl_2018_us_county.zip)
 
 ### Open `Spyder` and import libraries
 
 We are going to again use `geopandas` and  `descartes` in this lab, but also `rasterio`, `rasterstats`, `matplotlib`, and others. To start with:
 ```
+import os
 import rasterio
 ```
 
@@ -38,8 +43,12 @@ import rasterio
 We are going to reuse this string that gives the path to the tmax file you downloaded so let's store it in a variable.
 When you use a string more than once, it is better to create a variable to store the value because it is very easy
 for the value to become out of sync if, say, you want to change it and only change one of the instances.
+
+For this assignment we assume all the data is in the same directory, which we'll label `base_dir`. Update this as needed for your environment.
 ```
-tmax_path='/home/ubuntu/data/us.tmax_nohads_ll_20190501_float.tif'
+base_dir = '/Users/aaryn/gist604b/python/rasterstats'
+```
+tmax_path=os.path.join(base_dir,'us.tmax_nohads_ll_20190501_float.tif')
 ```
 Now, load the tif using `rasterio`:
 ```
@@ -75,7 +84,7 @@ from descartes import PolygonPatch
 ```
 Read CSV using pandas and specifying a tab (`\t`) delimiter:
 ```
-gaz = pandas.read_csv('/home/ubuntu/data/2018_Gaz_ua_national.txt',delimiter='\t')
+gaz = pandas.read_csv(os.path.join(base_dir,'2018_Gaz_ua_national.txt'),delimiter='\t')
 ```
 It does a poor job with the column names (one of them has a newline in it), so let's fix it:
 ```
@@ -96,14 +105,9 @@ Explore:
 type(geometry)
 geometry[0]
 ```
-Next, specify a coordinate reference system as a `dict`, since geopandas wants a dict like this when we construct our
-spatial data frame:
-```
-crs = {'init': 'epsg:4326'}
-```
 Finally, create the spatial dataframe using the table, the geometries, and the crs:
 ```
-gaz_geo = geopandas.GeoDataFrame(gaz, crs=crs, geometry=geometry)
+gaz_geo = geopandas.GeoDataFrame(gaz, geometry=geometry, crs='epsg:4326')
 ```
 Explore:
 ```
@@ -133,15 +137,15 @@ join to intersect the points with the polygon. Unfortunately, creating a polygon
 seem to be very straight forward. We will first get the extents of the raster, then manually construct a geometry. In order
 to use the `geopandas` `sjoin` we will then need to create a geopandas SpatialDataFrame. This section details those steps.
 
-The `rasterio` raster has a `bound` attribute which gives the boundaries:
+The `rasterio` raster has a `bounds` attribute which gives the boundaries:
 ```
-tmax.bound
+tmax.bounds
 ```
 To create a `shapely.geometry`:
 ```
 shapely.geometry.Polygon([(left, bottom), (right, bottom), (right, top), (left, top), (left, bottom)])
 ```
-which, subbing in the attributes from the `tmax.bound`:
+which, subbing in the attributes from the `tmax.bounds`:
 ```
 poly = shapely.geometry.Polygon([(tmax.bounds.left, tmax.bounds.bottom), (tmax.bounds.right, tmax.bounds.bottom), (tmax.bounds.right, tmax.bounds.top), (tmax.bounds.left, tmax.bounds.top),(tmax.bounds.left, tmax.bounds.bottom)])
 poly
@@ -179,7 +183,7 @@ tmax.sample(xy=xy)
 You'll see it's a `generator object`. To convert it to a list (which we want so we can add a new column to our points 
 GeoDataFrame, `gaz_48`), just call the `list()` function on it:
 ```
-samples = list(tmax.sample(xy=xy)])
+samples = list(tmax.sample(xy=xy))
 ```
 `samples` should be the same length as the number of records in `gaz_48` and in the same order. 
 ```
@@ -197,19 +201,28 @@ county. This is a relatively straightforward task with `rasterstats` library, wh
 First, import the counties shapefile:
 ```
 import rasterstats
-counties_shapefile='/home/ubuntu/data/tl_2018_us_county/tl_2018_us_county.shp'
-counties = geopandas.read_file(counties_shapefile)
+
+counties_path=os.path.join(base_dir,'tl_2018_us_county.shp')
+counties = geopandas.read_file(counties_path)
 counties.plot()
 ```
 That's hard to see since we are interested in the continental US
 ```
-
+ax = mpl.pyplot.gca()
+counties.plot(ax=ax)
 ax.set_xlim([tmax.bounds.left, tmax.bounds.right])
 ax.set_ylim([tmax.bounds.bottom, tmax.bounds.top])
 ```
+Take a minute to think about the resolutions and scales of these two datasets, the grid `tmax` and the vector, `counties`. If you look at the size of `tl_2018_us_county.shp` on disk you will see it is around 127.3 MB. On the other hand, the `tmax` tif is only 41KB. 
+Additionally, the two data sources are in different projections. Let's reproject the data and do some vector generalization. When we reproject to EPSG:4326 (lat/long, WGS84), we'll use the distance 0.01 degrees as the simplication tolerance.
+```
+counties_4326 = counties.to_crs({'init': 'epsg:4326'}).simplify(0.001)
+counties_4326_path = os.path.join(base_dir,'tl_2018_us_county_4326.shp')
+counties_4326.to_file(counties_4326_path)
+```
 Next, perform the zonal stats. We need to set `all_touched` = `True` (see [rasterstats docs](https://pythonhosted.org/rasterstats/manual.html#rasterization-strategy) for discussion.
 ```
-county_stats = rasterstats.zonal_stats(counties_shapefile, tmax_path, stats="mean", all_touched=True)
+county_stats = rasterstats.zonal_stats(counties_4326_path, tmax_path, stats="mean", all_touched=True, nodata=-999)
 ```
 Dig in and see what it gives us:
 ```
@@ -217,7 +230,7 @@ type(county_stats)
 county_stats[0]
 type(county_stats[0])
 ```
-This gives us a `list` of `dict`s with the `mean` for each county. This is exactly what we want. But we also
+This gives us a `list` of `dict`s with the `mean` for each county. This is almost exactly what we want. But we also
 want it joined to the counties GeoDataFrame but it needs to be converted into a list of numbers. 
 
 ```
@@ -233,7 +246,7 @@ counties['tmax_mean'] = tmax_mean
 ```
 Next, save the file:
 ```
-counties.to_file('/home/ubuntu/data/tl_2018_us_county/tl_2018_us_county_temps.shp')
+counties.to_file(os.path.join(base_dir,'tl_2018_us_county_temps.shp'))
 ```
 
 ### Plot the counties based on the mean max temp
