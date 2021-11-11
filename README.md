@@ -48,6 +48,8 @@ For this assignment we assume all the data is in the same directory, which we'll
 ```
 base_dir = '/Users/aaryn/gist604b/python/rasterstats'
 ```
+No open the raster tmax:
+```
 tmax_path=os.path.join(base_dir,'us.tmax_nohads_ll_20190501_float.tif')
 ```
 Now, load the tif using `rasterio`:
@@ -190,7 +192,15 @@ samples = list(tmax.sample(xy=xy))
 len(samples)
 gaz_48.shape
 ```
-Thus, we can simply append the `samples` list to the `gas_48` DataFrame:
+But the type of each sample is a `numpy.ndarray` - We want a simpler number. 
+```
+type(samples[0])
+```
+We need to unnest:
+```
+gaz_48['tmax'] = [item for unnested in samples for item in unnested]
+```
+Now we can append the `samples` list to the `gas_48` DataFrame:
 ```
 gaz_48['tmax'] = samples
 ```
