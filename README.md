@@ -285,6 +285,9 @@ counties.plot(column='tmax_mean', ax=ax)
 gaz_48.plot(ax=ax,marker='+',color='red')
 pyplot.show()
 ```
+
+Save this as `sample_raster.png`
+
 ## Deliverable
 Look at the [geopandas docs](http://geopandas.org/reference.html#geopandas.GeoDataFrame.plot) to finish up. Recreate the last map containing the counties symbolized based on `tmax_mean` and the `gaz_48` urban areas but change:
 1) the color scheme of the counties
