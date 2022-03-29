@@ -1,0 +1,49 @@
+name: Check for required files
+
+on:
+  push:
+    branches: [ rasterstats ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check sample_raster.py
+        id: check_1_files
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "sample_raster.py"
+
+      - name: Required files exist
+        if: steps.check_1_files.outputs.files_exists != 'true'
+        run: |
+          echo Required file, 'sample_raster.py', is missing
+          exit 1
+          
+      - name: Check sample_raster.png
+        id: check_2_files
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "sample_raster.png"
+
+      - name: Required files exist
+        if: steps.check_2_files.outputs.files_exists != 'true'
+        run: |
+          echo Required file, 'sample_raster.png', is missing
+          exit 1
+          
+          
+      - name: Check zonal_stats_county_temps.png
+        id: check_3_files
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "zonal_stats_county_temps.png"
+
+      - name: Required files exist
+        if: steps.check_3_files.outputs.files_exists != 'true'
+        run: |
+          echo Required file, 'zonal_stats_county_temps.png', is missing
+          exit 1
+          

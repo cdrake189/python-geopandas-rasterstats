@@ -13,11 +13,6 @@ Reference:
 The objective of this lab is to reproduce one of the QGIS Tutorials you did previously:
 - [Sampling raster data](http://www.qgistutorials.com/en/docs/3/sampling_raster_data.html)
 
-## Deliverables
-- `sample_raster.py`
-- `sample_raster.png`
-- `zonal_stats_county_temps.png`
-
 ## Install any new libraries
 You will need to install at least `rasterstats` for this assignment. Add it to your `geo37` environment.
 
@@ -288,7 +283,7 @@ pyplot.show()
 
 Save this as `sample_raster.png`
 
-## Deliverable
+## Putting it together
 Look at the [geopandas docs](http://geopandas.org/reference.html#geopandas.GeoDataFrame.plot) to finish up. Recreate the last map containing the counties symbolized based on `tmax_mean` and the `gaz_48` urban areas but change:
 1) the color scheme of the counties
 2) the color of the gaz urban areas
@@ -296,4 +291,9 @@ Look at the [geopandas docs](http://geopandas.org/reference.html#geopandas.GeoDa
 
 Create a screenshot of your final map and name it `zonal_stats_county_temps.png `
 
-[![DOI](https://zenodo.org/badge/219385180.svg)](https://zenodo.org/badge/latestdoi/219385180)
+## Deliverables
+Create a new branch named `rasterstats` and make a pull request with the following files in it to be merged with `main` (do not merge them yourself):
+- `sample_raster.py`
+- `sample_raster.png`
+- `zonal_stats_county_temps.png`
+
