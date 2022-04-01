@@ -280,7 +280,7 @@ counties.plot(column='tmax_mean', ax=ax)
 gaz_48.plot(ax=ax,marker='+',color='red')
 pyplot.show()
 ```
-
+mklmklmkl
 Save this as `sample_raster.png`
 
 ## Putting it together
